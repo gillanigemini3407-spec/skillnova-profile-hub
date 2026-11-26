@@ -1,0 +1,92 @@
+# SkillNova Profile Hub - Windows build + check on GitHub Actions
+#
+# Builds the portable Windows ZIP on a free online Windows machine and
+# CHECKS the tool there too (mock Chrome profiles, launch dry-run,
+# restore edit, and a smoke test of the built exe). No Windows PC needed.
+#
+# Setup (once): create a GitHub repo, put the whole
+# skillnova-profile-hub folder contents at the repo root, add this file
+# at .github/workflows/build-windows.yml, push. Then Actions tab ->
+# "Build Windows portable" -> "Run workflow".
+#
+# The finished ZIP is downloaded from the Actions tab as an artifact.
+
+name: Build Windows portable
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Windows checks (mock Chrome data, dry-run launch)
+        run: python verify_windows.py
+
+      - name: Practical tab-restore test (real Chrome, two cycles)
+        run: python windows_tab_test.py
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Freeze the launcher (one-folder build)
+        run: pyinstaller --onedir --name "SkillNova-Profile-Hub" --clean --noconfirm launcher.py
+
+      - name: Copy index.html beside the exe
+        shell: powershell
+        run: |
+          # The exe serves index.html from its own folder (PROFILE_HUB_BASE),
+          # so it must sit beside the exe before the smoke test runs.
+          # (The Assemble step copies it again into the final portable folder.)
+          Copy-Item "index.html" "dist\SkillNova-Profile-Hub\index.html"
+          if (-not (Test-Path "dist\SkillNova-Profile-Hub\index.html")) { throw "index.html copy failed" }
+
+      - name: Smoke test the built exe
+        shell: powershell
+        run: |
+          $env:PROFILE_HUB_NO_BROWSER = "1"
+          $proc = Start-Process -FilePath ".\dist\SkillNova-Profile-Hub\SkillNova-Profile-Hub.exe" -PassThru -NoNewWindow
+          try {
+            $ok = $false
+            for ($i = 1; $i -le 30; $i++) {
+              try {
+                $r = Invoke-WebRequest -Uri "http://127.0.0.1:8000/" -UseBasicParsing -TimeoutSec 2
+                if ($r.StatusCode -eq 200 -and $r.Content -match "SkillNova Profile Hub") { $ok = $true; break }
+              } catch { Start-Sleep -Seconds 1 }
+            }
+            if (-not $ok) { throw "built exe did not serve the UI on port 8000" }
+            Write-Host "exe smoke test OK - UI served on port 8000"
+          } finally {
+            if ($proc -and -not $proc.HasExited) { Stop-Process -Id $proc.Id -Force }
+          }
+
+      - name: Assemble the portable folder
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path "SkillNova-Profile-Hub-v0.1-windows" | Out-Null
+          Copy-Item -Recurse -Force "dist\SkillNova-Profile-Hub\*" "SkillNova-Profile-Hub-v0.1-windows\"
+          Copy-Item "index.html","README.md","TEST-LOG.md" "SkillNova-Profile-Hub-v0.1-windows\"
+          if (-not (Test-Path "SkillNova-Profile-Hub-v0.1-windows\SkillNova-Profile-Hub.exe")) { throw "exe missing - build failed" }
+          if (-not (Test-Path "SkillNova-Profile-Hub-v0.1-windows\index.html")) { throw "index.html missing - build failed" }
+
+      - name: Zip the portable folder
+        shell: powershell
+        run: Compress-Archive -Path "SkillNova-Profile-Hub-v0.1-windows" -DestinationPath "SkillNova-Profile-Hub-v0.1-portable-windows.zip"
+
+      - name: Upload the Windows ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkillNova-Profile-Hub-v0.1-portable-windows
+          path: SkillNova-Profile-Hub-v0.1-portable-windows.zip
+          retention-days: 90
