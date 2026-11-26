@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkillNova Profile Hub</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: #f4f4f5; color: #18181b; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
+  .card { background: #fff; border: 1px solid #e4e4e7; border-radius: 22px;
+          padding: 16px; }
+  .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  h1 { font-size: 20px; margin: 0; }
+  .sub { font-size: 12px; color: #71717a; }
+  .toggle { margin-left: auto; display: flex; border: 1px solid #e4e4e7;
+            border-radius: 10px; overflow: hidden; }
+  .toggle button { padding: 6px 14px; border: none; font-size: 13px;
+                   font-weight: 700; cursor: pointer; background: #fff; color: #18181b; }
+  .toggle button.on { background: #2563eb; color: #fff; }
+  input[type="search"], input[type="text"] { width: 100%; margin-top: 12px;
+    padding: 9px 11px; border-radius: 10px; border: 1px solid #e4e4e7;
+    background: #fafafa; font-size: 14px; }
+  .status { margin-top: 10px; font-size: 13px; min-height: 18px; color: #52525b; }
+  .status.err { color: #dc2626; }
+  .status.ok { color: #16a34a; }
+  .group-head { display: flex; align-items: center; gap: 6px; margin: 16px 0 4px;
+    font-size: 13px; font-weight: 700; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+  .group-head .count { color: #71717a; font-weight: 400; }
+  .group-head .mini { margin-left: auto; font-size: 11px; font-weight: 600;
+    color: #2563eb; background: none; border: none; cursor: pointer; padding: 2px 4px; }
+  .group-empty { font-size: 12px; color: #71717a; margin: 4px 0 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          gap: 8px; margin-top: 6px; }
+  .tile { display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+          padding: 11px; border-radius: 12px; border: 1px solid #e4e4e7;
+          background: #fff; text-align: left; }
+  .tile:hover { border-color: #2563eb; }
+  .tile .name { font-size: 14px; font-weight: 700; line-height: 1.2;
+    word-break: break-word; }
+  .tile .sub2 { font-size: 11px; color: #71717a; line-height: 1.3; }
+  .tile .open { font: inherit; font-size: 12px; font-weight: 700; color: #2563eb;
+    background: none; border: none; cursor: pointer; padding: 0; margin-top: 3px; }
+  .tile .edit { font: inherit; font-size: 11px; color: #71717a; background: none; border: none;
+    cursor: pointer; padding: 0; margin-top: 2px; text-decoration: underline; }
+  .row { display: flex; width: 100%; align-items: center; gap: 9px; padding: 8px 10px;
+         margin-top: 6px; border-radius: 10px; border: 1px solid #e4e4e7;
+         background: #fff; text-align: left; }
+  .row:hover { border-color: #2563eb; }
+  .row .main { flex: 1; min-width: 0; }
+  .row .name { display: block; font-size: 14px; font-weight: 600; }
+  .row .sub2 { display: block; font-size: 11px; color: #71717a; }
+  .chip { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+          background: #f4f4f5; color: #52525b; white-space: nowrap; }
+  .restore { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+             white-space: nowrap; }
+  .restore.on { background: #dcfce7; color: #166534; }
+  .restore.off { background: #fef3c7; color: #92400e; }
+  .live { display: inline-flex; align-items: center; gap: 5px; font-size: 10px;
+          font-weight: 800; letter-spacing: .04em; padding: 2px 8px;
+          border-radius: 20px; background: #16a34a; color: #fff;
+          white-space: nowrap; }
+  .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%;
+                  background: #fff; }
+  .btn { font-size: 13px; font-weight: 700; color: #2563eb; background: none;
+         border: none; cursor: pointer; padding: 4px 6px; white-space: nowrap; }
+  .btn.gray { color: #71717a; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+  .actions button { flex: 1; padding: 9px; border-radius: 10px;
+    border: 1px solid #e4e4e7; background: #fafafa; font-size: 13px;
+    font-weight: 600; cursor: pointer; }
+  .foot { margin-top: 10px; font-size: 10px; color: #a1a1aa; text-align: center; }
+  .empty { margin: 22px 0; text-align: center; color: #71717a; font-size: 14px; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none;
+           align-items: flex-start; justify-content: center; padding-top: 8vh; z-index: 10; }
+  .modal.open { display: flex; }
+  .modal .box { background: #fff; border-radius: 16px; padding: 18px; width: min(520px, 92vw);
+    max-height: 80vh; overflow: auto; }
+  .modal-head { display: flex; align-items: flex-start; gap: 12px; }
+  .modal-head > div { flex: 1; min-width: 0; }
+  .modal-x { flex: none; width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid #e4e4e7; background: #fff; font-size: 20px;
+    line-height: 1; cursor: pointer; }
+  .add-profile-box { display: flex; flex-direction: column; overflow: hidden; }
+  .discovered-list { overflow-y: auto; max-height: 52vh; margin-top: 8px;
+    padding-right: 2px; }
+  .add-profile-box .rowbtns { flex: none; }
+  .modal h2 { margin: 0 0 6px; font-size: 17px; }
+  .modal label { display: block; font-size: 12px; font-weight: 700; margin-top: 12px; }
+  .modal input[type="text"] { margin-top: 4px; }
+  .modal input[type="color"] { margin-top: 4px; width: 52px; height: 34px;
+    border: 1px solid #e4e4e7; border-radius: 8px; background: #fff; padding: 2px; }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 13px;
+    margin-top: 6px; }
+  .modal .rowbtns { display: flex; gap: 8px; margin-top: 16px; }
+  .modal .rowbtns button { flex: 1; padding: 9px; border-radius: 10px; font-size: 13px;
+    font-weight: 700; cursor: pointer; }
+  .primary { background: #2563eb; color: #fff; border: none; }
+  .plain { background: #f4f4f5; border: 1px solid #e4e4e7; }
+  .danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  .pick { display: flex; align-items: center; gap: 8px; padding: 8px 4px;
+    border-top: 1px solid #f4f4f5; font-size: 13px; }
+  .pick .nm { flex: 1; min-width: 0; }
+  .pick small { color: #71717a; display: block; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="top">
+      <div>
+        <h1>SkillNova Profile Hub</h1>
+        <div class="sub">Chrome profiles + apps, one place. Click to open.</div>
+      </div>
+      <div class="toggle">
+        <button id="btnGroup">Group</button>
+        <button id="btnList">List</button>
+      </div>
+    </div>
+    <input type="search" id="search" placeholder="Search profile or app...">
+    <div id="status" class="status"></div>
+    <div id="empty" class="empty" style="display:none"></div>
+    <div id="groupView"></div>
+    <div id="listView" style="display:none"></div>
+    <div class="actions">
+      <button id="btnAddProfile">+ Add Profile</button>
+      <button id="btnAddApp">+ Add App</button>
+      <button id="btnAddGroup">+ New Group</button>
+    </div>
+    <div class="foot">Lightweight: ~10–20 MB &middot; Nothing runs in background</div>
+  </div>
+</div>
+
+<div class="modal" id="addProfileModal">
+  <div class="box add-profile-box">
+    <div class="modal-head">
+      <div>
+        <h2>Add Chrome profile</h2>
+        <div class="sub">Profiles found on this computer. Pick one to pin in the hub.</div>
+      </div>
+      <button class="modal-x" id="closeAddProfileX" aria-label="Close">&times;</button>
+    </div>
+    <div id="discoveredList" class="discovered-list"></div>
+    <div class="rowbtns"><button class="plain" id="closeAddProfile">Done</button></div>
+  </div>
+</div>
+
+<div class="modal" id="addAppModal">
+  <div class="box">
+    <div class="modal-head">
+      <div>
+        <h2>Add app</h2>
+        <div class="sub">Paste the full path to an app (.exe on Windows, program on Linux)
+          or a shortcut (.lnk on Windows).</div>
+      </div>
+      <button class="modal-x" id="closeAddAppX" aria-label="Close">&times;</button>
+    </div>
+    <label>App path</label>
+    <input type="text" id="appPath" placeholder="C:\Program Files\...\app.exe">
+    <label>Display name</label>
+    <input type="text" id="appName" placeholder="e.g. WhatsApp">
+    <div class="rowbtns">
+      <button class="plain" id="closeAddApp">Cancel</button>
+      <button class="primary" id="saveAddApp">Add app</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="editModal">
+  <div class="box">
+    <div class="modal-head">
+      <div><h2 id="editTitle">Edit item</h2></div>
+      <button class="modal-x" id="closeEditX" aria-label="Close">&times;</button>
+    </div>
+    <label>Display name (hub only — Chrome's own name never changes)</label>
+    <input type="text" id="editName">
+    <label>Color</label>
+    <input type="color" id="editColor">
+    <label>Groups (one item can be in more than one group)</label>
+    <div id="editGroups"></div>
+    <div class="rowbtns">
+      <button class="danger" id="editRemove">Remove</button>
+      <button class="plain" id="editMoveUp">Move up</button>
+      <button class="plain" id="editMoveDown">Move down</button>
+    </div>
+    <div class="rowbtns">
+      <button class="plain" id="closeEdit">Cancel</button>
+      <button class="primary" id="saveEdit">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="groupModal">
+  <div class="box">
+    <div class="modal-head">
+      <div><h2 id="groupTitle">New group</h2></div>
+      <button class="modal-x" id="closeGroupX" aria-label="Close">&times;</button>
+    </div>
+    <label>Group name</label>
+    <input type="text" id="groupName" placeholder="e.g. Social Media">
+    <label>Color</label>
+    <input type="color" id="groupColor" value="#1877F2">
+    <div class="rowbtns">
+      <button class="plain" id="closeGroup">Cancel</button>
+      <button class="primary" id="saveGroup">Save group</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let profiles = [];      // discovered Chrome profiles
+let skipped = [];
+let cfg = { view: "group", groups: [], items: [] };
+let loaded = false;
+let editingId = null, editingGroupId = null;
+
+const PALETTE = ["#1877F2","#FF0000","#25F4EE","#34A853","#E1306C","#F59E0B","#8B5CF6","#14B8A6"];
+
+function say(msg, cls) {
+  const el = $("#status");
+  el.textContent = msg;
+  el.className = "status" + (cls ? " " + cls : "");
+}
+
+async function api(path, method, body) {
+  const r = await fetch(path, {
+    method: method || "GET",
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+  return data;
+}
+
+async function loadAll() {
+  const [p, c] = await Promise.all([api("/api/profiles"), api("/api/config")]);
+  profiles = p.profiles || [];
+  skipped = p.skipped || [];
+  cfg = c;
+  loaded = true;
+  render();
+}
+
+async function refreshRunning() {
+  if (!loaded) return;
+  try {
+    const p = await api("/api/profiles");
+    profiles = p.profiles || [];
+    skipped = p.skipped || [];
+    render();
+    if ($("#addProfileModal").classList.contains("open")) renderDiscoveredList();
+  } catch (e) { /* keep the last known state */ }
+}
+setInterval(refreshRunning, 10000);
+
+async function saveConfig() {
+  if (!loaded) await loadAll();
+  cfg = await api("/api/config", "POST", cfg);
+  render();
+}
+
+function chromeName(item) {
+  if (item.kind === "app") return item.app_path || "";
+  const p = profiles.find((x) => x.dir === item.profile_dir);
+  return p ? p.name : (item.profile_dir || "");
+}
+
+function restoreOf(item) {
+  if (item.kind !== "profile") return null;
+  const p = profiles.find((x) => x.dir === item.profile_dir);
+  return p ? p.restore_on : null;
+}
+
+function profileEmail(item) {
+  if (item.kind !== "profile") return "";
+  const p = profiles.find((x) => x.dir === item.profile_dir);
+  return p && p.email ? p.email : "";
+}
+
+function runningOf(item) {
+  if (item.kind !== "profile") return false;
+  const p = profiles.find((x) => x.dir === item.profile_dir);
+  return !!(p && p.running);
+}
+
+function liveBadge(item) {
+  return runningOf(item) ? `<span class="live">LIVE</span>` : "";
+}
+
+function visibleItems() {
+  const q = ($("#search").value || "").trim().toLowerCase();
+  const items = [...cfg.items].sort((a, b) => (a.order || 0) - (b.order || 0));
+  if (!q) return items;
+  return items.filter((it) => {
+    const p = profiles.find((x) => x.dir === it.profile_dir);
+    const profileText = p ? ` ${p.profile_name || ""} ${p.account_name || ""} ${p.email || ""}` : "";
+    const hay = ((it.custom_name || "") + " " + chromeName(it) + profileText + " " +
+      (it.profile_dir || "") + " " + (it.app_path || "")).toLowerCase();
+    return hay.includes(q);
+  });
+}
+
+function groupOf(id) { return cfg.groups.find((g) => g.id === id); }
+
+function tagChip(gid) {
+  const g = groupOf(gid);
+  if (!g) return "";
+  return `<span class="chip">${esc(g.name)}</span>`;
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function restoreBadge(item) {
+  const r = restoreOf(item);
+  if (r === null) return "";
+  return r ? `<span class="restore on">Tabs restore: on</span>`
+           : `<span class="restore off">Tabs restore: off</span>`;
+}
+
+function tileHtml(it) {
+  const email = profileEmail(it);
+  const sub = it.kind === "profile"
+    ? `Chrome: ${esc(chromeName(it))} &middot; ${esc(it.profile_dir || "")}${email ? ` &middot; ${esc(email)}` : ""}`
+    : `App: ${esc(it.app_path || "")}`;
+  return `<div class="tile">
+      <span class="dot" style="background:${esc(it.color || "#1877F2")}"></span>
+      <span class="name">${esc(it.custom_name || chromeName(it))}</span>
+      ${liveBadge(it)}
+      <span class="sub2">${sub}</span>
+      ${restoreBadge(it)}
+      <button class="open" data-launch="${it.id}">Open</button>
+      <button class="edit" data-edit="${it.id}">Rename / groups / color</button>
+    </div>`;
+}
+
+function rowHtml(it) {
+  const email = profileEmail(it);
+  const sub = it.kind === "profile"
+    ? `Chrome: ${esc(chromeName(it))} &middot; ${esc(it.profile_dir || "")}${email ? ` &middot; ${esc(email)}` : ""}`
+    : `App: ${esc(it.app_path || "")}`;
+  const chips = (it.group_ids || []).map(tagChip).join("");
+  return `<div class="row">
+      <span class="dot" style="background:${esc(it.color || "#1877F2")}"></span>
+      <span class="main"><span class="name">${esc(it.custom_name || chromeName(it))}</span>
+      <span class="sub2">${sub}</span></span>
+      ${liveBadge(it)}${chips}${restoreBadge(it)}
+      <button class="btn" data-launch="${it.id}">Open</button>
+      <button class="btn gray" data-edit="${it.id}">Edit</button>
+    </div>`;
+}
+
+function render() {
+  $("#btnGroup").classList.toggle("on", cfg.view === "group");
+  $("#btnList").classList.toggle("on", cfg.view === "list");
+  $("#groupView").style.display = cfg.view === "group" ? "block" : "none";
+  $("#listView").style.display = cfg.view === "list" ? "block" : "none";
+  const items = visibleItems();
+  const empty = $("#empty");
+  if (profiles.length === 0) {
+    empty.style.display = "block";
+    empty.textContent = "No Chrome profiles found — check Chrome is installed." +
+      (skipped.length ? " (" + skipped.length + " folder(s) skipped.)" : "");
+  } else if (items.length === 0 && cfg.items.length === 0) {
+    empty.style.display = "block";
+    empty.textContent = "No profiles pinned yet — use + Add Profile to pin one.";
+  } else if (items.length === 0) {
+    empty.style.display = "block";
+    empty.textContent = "Nothing matches the search.";
+  } else {
+    empty.style.display = "none";
+  }
+  // Group view
+  const gv = $("#groupView");
+  let html = "";
+  const groups = [...cfg.groups].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const q = ($("#search").value || "").trim().toLowerCase();
+  for (const g of groups) {
+    const mine = items.filter((it) => (it.group_ids || []).includes(g.id));
+    if (!mine.length && q && !g.name.toLowerCase().includes(q)) continue;
+    html += `<div class="group-head"><span class="dot" style="background:${esc(g.color || "#1877F2")}"></span>
+      ${esc(g.name)} <span class="count">&middot; ${mine.length}</span>
+      <button class="mini" data-edit-group="${g.id}">Rename</button></div>`;
+    html += mine.length
+      ? `<div class="grid">${mine.map(tileHtml).join("")}</div>`
+      : `<div class="group-empty">No profiles yet — use Rename / groups / color on a profile to add it here.</div>`;
+  }
+  const ungrouped = items.filter((it) => !(it.group_ids || []).length);
+  if (ungrouped.length) {
+    html += `<div class="group-head">Ungrouped <span class="count">&middot; ${ungrouped.length}</span></div>
+      <div class="grid">${ungrouped.map(tileHtml).join("")}</div>`;
+  }
+  gv.innerHTML = html;
+  // List view
+  $("#listView").innerHTML = items.map(rowHtml).join("");
+}
+
+async function launch(id) {
+  const it = cfg.items.find((x) => x.id === id);
+  if (!it) return;
+  say("Opening " + (it.custom_name || chromeName(it)) + "...");
+  try {
+    const r = await api("/api/launch", "POST", { kind: it.kind, id: it.id });
+    if (r.dry_run) {
+      say("Dry run — would launch: " + (r.command || []).join(" "), "ok");
+    } else {
+      say("Opened " + (it.custom_name || chromeName(it)) + ".", "ok");
+    }
+    await loadAll();
+  } catch (e) {
+    say("Could not open: " + e.message, "err");
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const editEl = e.target.closest("[data-edit]");
+  if (editEl) { openEdit(editEl.getAttribute("data-edit")); return; }
+  const egEl = e.target.closest("[data-edit-group]");
+  if (egEl) { openGroup(egEl.getAttribute("data-edit-group")); return; }
+  const launchEl = e.target.closest("[data-launch]");
+  if (launchEl) { launch(launchEl.getAttribute("data-launch")); return; }
+});
+
+$("#btnGroup").onclick = async () => { cfg.view = "group"; await saveConfig(); };
+$("#btnList").onclick = async () => { cfg.view = "list"; await saveConfig(); };
+$("#search").oninput = render;
+
+function openModal(id) { $(id).classList.add("open"); }
+function closeModal(id) { $(id).classList.remove("open"); }
+document.querySelectorAll(".modal").forEach((m) => {
+  m.addEventListener("click", (e) => {
+    if (e.target === m) closeModal("#" + m.id);
+  });
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  document.querySelectorAll(".modal.open")
+    .forEach((m) => m.classList.remove("open"));
+});
+
+// ---- Add profile
+function renderDiscoveredList() {
+  const added = new Set(cfg.items.filter((i) => i.kind === "profile").map((i) => i.profile_dir));
+  const list = $("#discoveredList");
+  if (!profiles.length) {
+    list.innerHTML = `<div class="empty">No Chrome profiles found — check Chrome is installed.</div>`;
+    return;
+  }
+  list.innerHTML = profiles.map((p) => {
+    const done = added.has(p.dir);
+    return `<div class="pick"><span class="dot" style="background:#1877F2"></span>
+      <span class="nm">${esc(p.name)}${p.running ? ` <span class="live">LIVE</span>` : ""}<small>Chrome profile: ${esc(p.profile_name || p.name)} &middot; ${esc(p.dir)}${p.email ? ` &middot; ${esc(p.email)}` : ""}
+      &middot; Tabs restore: ${p.restore_on ? "on" : "off"}</small></span>
+      ${done ? `<span class="chip">Added</span>`
+             : `<button class="btn" data-add-profile="${esc(p.dir)}">Add</button>`}</div>`;
+  }).join("");
+}
+$("#btnAddProfile").onclick = () => {
+  renderDiscoveredList();
+  openModal("#addProfileModal");
+};
+$("#closeAddProfile").onclick = () => closeModal("#addProfileModal");
+$("#closeAddProfileX").onclick = () => closeModal("#addProfileModal");
+document.addEventListener("click", async (e) => {
+  const addEl = e.target.closest("[data-add-profile]");
+  if (!addEl) return;
+  const dir = addEl.getAttribute("data-add-profile");
+  const p = profiles.find((x) => x.dir === dir);
+  if (!p) return;
+  if (cfg.items.some((i) => i.kind === "profile" && i.profile_dir === dir)) {
+    renderDiscoveredList();
+    return;
+  }
+  addEl.disabled = true;
+  addEl.textContent = "Adding...";
+  const color = PALETTE[cfg.items.length % PALETTE.length];
+  cfg.items.push({ id: "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    kind: "profile", profile_dir: dir, custom_name: p.name, color,
+    group_ids: [], order: cfg.items.length });
+  try {
+    await saveConfig();
+    renderDiscoveredList();
+    say("Added " + p.name + ".", "ok");
+  } catch (err) {
+    renderDiscoveredList();
+    say("Could not add: " + err.message, "err");
+  }
+});
+
+// ---- Add app
+$("#btnAddApp").onclick = () => { $("#appPath").value = ""; $("#appName").value = ""; openModal("#addAppModal"); };
+$("#closeAddApp").onclick = () => closeModal("#addAppModal");
+$("#closeAddAppX").onclick = () => closeModal("#addAppModal");
+$("#saveAddApp").onclick = async () => {
+  const path = $("#appPath").value.trim().replace(/^"+|"+$/g, "").trim();
+  if (!path) { say("Paste an app path first.", "err"); return; }
+  if (cfg.items.some((i) => i.kind === "app" && i.app_path === path)) {
+    say("That app is already in the hub.", "err");
+    return;
+  }
+  const base = path.split(/[\\/]/).pop() || path;
+  const name = $("#appName").value.trim() || base.replace(/\.[^.]+$/, "") || base;
+  const color = PALETTE[cfg.items.length % PALETTE.length];
+  cfg.items.push({ id: "i" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    kind: "app", app_path: path, custom_name: name, color,
+    group_ids: [], order: cfg.items.length });
+  try {
+    await saveConfig();
+    closeModal("#addAppModal");
+    say("Added app " + name + ".", "ok");
+  } catch (err) {
+    say("Could not add app: " + err.message, "err");
+  }
+};
+
+// ---- Edit item
+function openEdit(id) {
+  const it = cfg.items.find((x) => x.id === id);
+  if (!it) return;
+  editingId = id;
+  $("#editTitle").textContent = "Edit — " + (it.custom_name || chromeName(it));
+  $("#editName").value = it.custom_name || chromeName(it);
+  $("#editColor").value = it.color || "#1877F2";
+  $("#editGroups").innerHTML = cfg.groups.map((g) =>
+    `<label class="check"><input type="checkbox" data-gid="${g.id}"
+      ${ (it.group_ids || []).includes(g.id) ? "checked" : "" }> ${esc(g.name)}</label>`).join("") ||
+    `<div class="sub">No groups yet — use + New Group first.</div>`;
+  openModal("#editModal");
+}
+$("#closeEdit").onclick = () => closeModal("#editModal");
+$("#closeEditX").onclick = () => closeModal("#editModal");
+$("#saveEdit").onclick = async () => {
+  const it = cfg.items.find((x) => x.id === editingId);
+  if (!it) { say("Could not save: item not found. Reopen Edit and try again.", "err"); return; }
+  const newName = $("#editName").value.trim() || chromeName(it);
+  const btn = $("#saveEdit");
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+  try {
+    it.custom_name = newName;
+    it.color = $("#editColor").value;
+    it.group_ids = [...document.querySelectorAll("#editGroups input:checked")]
+      .map((c) => c.getAttribute("data-gid"));
+    await saveConfig();
+    const saved = cfg.items.find((x) => x.id === editingId);
+    if (!saved || saved.custom_name !== newName) {
+      throw new Error("the saved name did not come back from the tool");
+    }
+    closeModal("#editModal");
+    say("Saved name: " + newName, "ok");
+  } catch (err) {
+    say("Could not save name: " + err.message +
+      ". Keep the SkillNova window open, then press Save again.", "err");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save";
+  }
+};
+$("#editRemove").onclick = async () => {
+  cfg.items = cfg.items.filter((x) => x.id !== editingId);
+  cfg.items.forEach((x, i) => (x.order = i));
+  await saveConfig();
+  closeModal("#editModal");
+  say("Removed.", "ok");
+};
+$("#editMoveUp").onclick = async () => { moveItem(-1); };
+$("#editMoveDown").onclick = async () => { moveItem(1); };
+async function moveItem(dir) {
+  const idx = cfg.items.findIndex((x) => x.id === editingId);
+  if (idx < 0) return;
+  const j = idx + dir;
+  if (j < 0 || j >= cfg.items.length) return;
+  const tmp = cfg.items[idx]; cfg.items[idx] = cfg.items[j]; cfg.items[j] = tmp;
+  cfg.items.forEach((x, i) => (x.order = i));
+  await saveConfig();
+}
+
+// ---- Groups
+$("#btnAddGroup").onclick = () => openGroup(null);
+function openGroup(id) {
+  editingGroupId = id;
+  const g = id ? cfg.groups.find((x) => x.id === id) : null;
+  $("#groupTitle").textContent = g ? "Rename group" : "New group";
+  $("#groupName").value = g ? g.name : "";
+  $("#groupColor").value = (g && g.color) || "#1877F2";
+  openModal("#groupModal");
+}
+$("#closeGroup").onclick = () => closeModal("#groupModal");
+$("#closeGroupX").onclick = () => closeModal("#groupModal");
+$("#saveGroup").onclick = async () => {
+  const name = $("#groupName").value.trim();
+  if (!name) { say("Type a group name first.", "err"); return; }
+  const color = $("#groupColor").value;
+  const wasNew = !editingGroupId;
+  if (editingGroupId) {
+    const g = cfg.groups.find((x) => x.id === editingGroupId);
+    if (g) { g.name = name; g.color = color; }
+  } else {
+    cfg.groups.push({ id: "g" + Date.now().toString(36), name, color,
+                      order: cfg.groups.length });
+    cfg.view = "group";
+    $("#search").value = "";
+  }
+  await saveConfig();
+  closeModal("#groupModal");
+  say(wasNew ? "Group created." : "Group saved.", "ok");
+};
+
+loadAll().catch((e) => say("Could not load: " + e.message, "err"));
+</script>
+</body>
+</html>
